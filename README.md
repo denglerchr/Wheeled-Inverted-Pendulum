@@ -6,4 +6,4 @@ While it is a one man project, I am grateful for every tip and improvement. Feel
 
 **Important notes:**
 * While the robot is running, the state of this repo is far from done, especially the doc and also a rework of the hardware are on my list, hopefully I can get some of that stuff done in Q1-2 2019.
-* I provide this as is, but do not provide any sort of support or debugging, so please avoid writing me stuff similar to: "It doesnt work and I don't know why. Please help me, here's a low res picture."
+* I provide this as is, but do not provide any sort of support or debugging, so please avoid writing me messages like: "It doesnt work and I don't know why. Please help me, here's a low res picture."
