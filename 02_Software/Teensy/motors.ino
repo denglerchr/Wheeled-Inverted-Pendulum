@@ -35,4 +35,8 @@ void set_motors()
 
   analogWrite(PIN_PWM_RIGHT, speed_right);
   digitalWrite(PIN_DIR_RIGHT, dir_right);
+
+  //save chosen u in order to make a prediction
+  ulast[0] = action[0].floatingPoint;
+  ulast[1] = action[1].floatingPoint;
 }

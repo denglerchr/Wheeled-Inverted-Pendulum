@@ -41,7 +41,8 @@ void setup() {
   Serial.println(F("Initializing DMP..."));
   devStatus = mpu.dmpInitialize();
   // make sure it worked (returns 0 if so)
-  if (devStatus == 0) {
+  if (devStatus == 0)
+  {
     // turn on the DMP, now that it's ready
     Serial.println(F("Enabling DMP..."));
     mpu.setDMPEnabled(true);
@@ -57,7 +58,9 @@ void setup() {
 
     // get expected DMP packet size for later comparison
     packetSize = mpu.dmpGetFIFOPacketSize();
-  } else {
+  }
+  else
+  {
     // ERROR!
     // 1 = initial memory load failed
     // 2 = DMP configuration updates failed
@@ -70,6 +73,8 @@ void setup() {
   // variable initialization
   for (i=0; i<7; i++)
   {
+    state_sensor[i] = 0.0;
+    state_model[i] = 0.0;
     state[i].floatingPoint = 0.0;
   }
   for (i=0; i<2; i++)
@@ -112,7 +117,7 @@ void loop()
     // Get batterie voltage (overwrites "v_battery")
     get_batterie_voltage();
 
-    //Change encoder state if new "u" arrived
+    //Change encoder state if new "u" arrived, overwrite "ulast"
     set_motors();
 
     // Readout MPU if new data is available (overwrite "ypr")
@@ -121,12 +126,16 @@ void loop()
     // Read out encoders (overwrite "ds_left", "ds_right")
     read_encoder();
 
-    // State estimation (overwrite "state" and "newdata")
+    // State estimation (overwrite "state_sensor", "state_model", "newdata", "newprediction")
     state_update();
   }
 
-  // Raspberry pi communication if it is ready (overwrite "u")
+  // Raspberry pi communication if it is ready (overwrite "action", "newdata")
   raspi_communication();
+
+  // Run a prediction step here, as this should be where the mc has some time
+  //Overwrite "state_model" and "newprediction"
+  runmodel()
 
   //Uncomment to send data to PC
   pc_communication();

@@ -28,6 +28,15 @@ bool dir_right; //true means forward, false backwards
 uint8_t speed_left; //PWM for the motor speed. 255 is max value
 uint8_t speed_right; //PWM for the motor speed. 255 is max value
 
+// State update and outlier detection
+float state_sensor[7];
+float state_model[7];
+float ulast[7];
+float alpha_th = 2.0; //choose large at start as state_model is off at beginning
+float dalpha_th = 1.0; //choose large at start as state_model is off at beginning
+float dphi_th = 1.0; //choose large at start as state_model is off at beginning
+bool newprediction; // true if a new prediction should be made based on new state action data
+
 //Raspberry pi communication
 uint8_t i, j;
 uint8_t n_bytes_to_come = 0;

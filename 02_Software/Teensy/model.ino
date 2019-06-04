@@ -1,36 +1,40 @@
-void dxdt_segway(float* xdot, float* x, float* u);
+void runmodel()
+{
+  if (newprediction)
+  {
+    //Run the model and overwrite state_model
+    statepredict(state_model, state, ulast);
+    newprediction = false;
+  }
+}
 
-void statepredict(float* x2, binaryFloat* x, binaryFloat* u)
+void statepredict(float* x2, binaryFloat* x, float* u)
 {
   //use RungeKutta4 and a segway model to estimate next state
   const float dt = DT/1000000.0;
-  float xfloat[7];
-  float ufloat[7];
+  float temp[7];
   float dx1[7];
   float dx2[7];
   float dx3[7];
   float dx4[7];
   int i;
 
-  // Get rid of floatingPoint
   for (i = 0; i<7; i++)
-      xfloat[i] = x[i].floatingPoint;
-  for (i = 0; i<2; i++)
-      ufloat[i] = u[i].floatingPoint;
+      temp[i] = x[i].floatingPoint;
 
-  dxdt_segway(dx1, xfloat, ufloat);
+  dxdt_segway(dx1, temp, u);
   for (i = 0; i<7; i++)
-      xfloat[i] = dx1[i]*dt/2 + x[i].floatingPoint;
+      temp[i] = dx1[i]*dt/2 + x[i].floatingPoint;
 
-  dxdt_segway(dx2, xfloat, ufloat);
+  dxdt_segway(dx2, temp, u);
   for (i = 0; i<7; i++)
-      xfloat[i] = dx2[i]*dt/2 + x[i].floatingPoint;
+      temp[i] = dx2[i]*dt/2 + x[i].floatingPoint;
 
-  dxdt_segway(dx3, xfloat, ufloat);
+  dxdt_segway(dx3, temp, u);
   for (i = 0; i<7; i++)
-      xfloat[i] = dx3[i]*dt + x[i].floatingPoint;
+      temp[i] = dx3[i]*dt + x[i].floatingPoint;
 
-  dxdt_segway(dx4, xfloat, ufloat);
+  dxdt_segway(dx4, temp, u);
   for (i = 0; i<7; i++)
       x2[i] = dt*(dx1[i] + 2*(dx2[i]+dx3[i]) + dx4[i])/6.0 + x[i].floatingPoint;
 }

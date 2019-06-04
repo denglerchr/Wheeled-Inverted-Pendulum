@@ -15,44 +15,88 @@ float angle_diff(float angle2, float angle1)
 // Function that updates the state, state vector is [x0, y0, phi, alpha, dalpha, v, dphi]
 void state_update()
 {
-  const float wheel_radius = 0.07; // Radius of the wheels, used to compensate angle (encoders also count the relative motion between body and wheel, which does not account for a velocity in "O")
-  float alpha, dphi, dphi2, dalpha; //phi
+  // Update the sensor data
+  state_sensor_update();
 
-  // Update stuff depending on the mpu
-  //phi = (-ypr[0]-mpu_bias[0]);
-  alpha = (ypr[1]-mpu_bias[1]);
-  dalpha = -0.0244*gyr[1];//(alpha - state[3].floatingPoint)*(1000000/DT);
-  dphi = 0.0244*gyr[2];//angle_diff(phi, state[2].floatingPoint)*(1000000/DT);
-  dphi2 = (ds_right-ds_left)/(0.1985)*(1000000/DT);
-
-  // limit accelerations to catch/smoothen sensor faults
-  /*if (abs(dalpha-state[4].floatingPoint) > 3.0)
+  // Outlier detection by comparing sensor value with model
+  if (check_sensor_values())
   {
-   0.0244*gyr[2] dalpha = 0.99*state[4].floatingPoint+0.01*dalpha;
-  }*/
-
-  if (abs(float(0.0244*gyr[2]) - dphi2) > 1.0)
-  {
-    dphi = dphi2;
-    //phi = state[2].floatingPoint + dphi*(DT/1000000.0);
+    // Use sensor data
+    state[0].floatingPoint = state_sensor[0];
+    state[1].floatingPoint = state_sensor[1];
+    state[2].floatingPoint = state_sensor[2];
+    state[3].floatingPoint = state_sensor[3];
+    state[4].floatingPoint = state_sensor[4];
+    state[5].floatingPoint = state_sensor[5];
+    state[6].floatingPoint = state_sensor[6];
   }
-
-  if (abs(float(-0.0244*gyr[1]) - state[4].floatingPoint)>3.0)
+  else
   {
-    dalpha = 0.995*state[4].floatingPoint + 0.005*dalpha;
-    alpha = 0.995*state[3].floatingPoint + 0.005*alpha;
+    // Overwrite state_sensor values that were wrongly integrated
+    state_sensor[0] = state_model[0];
+    state_sensor[1] = state_model[1];
+    state_sensor[2] = state_model[2];
+    // Use model prediction
+    state[0].floatingPoint = state_model[0];
+    state[1].floatingPoint = state_model[1];
+    state[2].floatingPoint = state_model[2];
+    state[3].floatingPoint = state_model[3];
+    state[4].floatingPoint = state_model[4];
+    state[5].floatingPoint = state_model[5];
+    state[6].floatingPoint = state_model[6];
   }
-
-  //state[2].floatingPoint = phi; // gear angle, invert sign because yaw is defined in a strange way
-  state[2].floatingPoint += dphi*(DT/1000000.0);
-  state[3].floatingPoint = alpha; // tilt angle
-  state[4].floatingPoint = dalpha;
-  state[6].floatingPoint = dphi;
-
-  // Update states that do not depent on Mpu data
-  state[5].floatingPoint = (ds_left + ds_right)/2*(1000000/DT) + state[4].floatingPoint*wheel_radius; // velocity in m/s
-  state[0].floatingPoint += cos(state[2].floatingPoint)*state[5].floatingPoint*(DT/1000000.0); // x
-  state[1].floatingPoint += sin(state[2].floatingPoint)*state[5].floatingPoint*(DT/1000000.0); // y
 
   newdata = true; //set flag to send the data to the raspberry pi
+  newprediction = true; //set flag to make a new prediction based on the new state
+}
+
+void state_sensor_update()
+{
+  const float wheel_radius = 0.07; // Radius of the wheels, used to compensate angle (encoders also count the relative motion between body and wheel, which does not account for a velocity in "O")
+  float dphi;
+
+  // Get state from sensors
+  dphi = 0.0244*gyr[2];//angle_diff(phi, state[2].floatingPoint)*(1000000/DT);
+  //dphi2 = (ds_right-ds_left)/(0.1985)*(1000000/DT);
+
+  //Update states depending on the mpu
+  state_sensor[2] += dphi*(DT/1000000.0);
+  state_sensor[3] = (ypr[1]-mpu_bias[1]); // tilt angle
+  state_sensor[4] = -0.0244*gyr[1];
+  state_sensor[6] = dphi;
+
+  // Update states that do not depent on Mpu data
+  state_sensor[5] = (ds_left + ds_right)/2*(1000000/DT) + state_sensor[4]*wheel_radius; // velocity in m/s
+  state_sensor[0] += cos(state_sensor[2])*state_sensor[5]*(DT/1000000.0); // x
+  state_sensor[1] += sin(state_sensor[2])*state_sensor[5]*(DT/1000000.0); // y
+}
+
+//returns true if sensors data seems ok, else return false
+// The threshold is increase if the state was not ok, as the next
+// prediction will be made on the model state, thus
+// increasing the threshold to circumvent accumulating errors
+bool check_sensor_values()
+{
+  const float alpha_th_min = 0.1;
+  const float dalpha_th_min = 0.1;
+  const float dphi_th_min = 0.1;
+
+  // Ignore model and use sensor if the segway has fallen down
+  if (abs(state[3].floatingPoint) > 50.0*M_PI/180.0)
+    return true;
+
+  // Check if deviation between sensor and model are inside the tolerance
+  if ((abs(state_sensor[3]-state_model[3]) > alpha_th) || (abs(state_sensor[4]-state_model[4]) > dalpha_th) || (abs(state_sensor[6]-state_model[6]) > dphi_th))
+  {
+    alpha_th *= 1.2;
+    dalpha_th *= 1.2;
+    dphi_th *= 1.2;
+    return false;
+  }
+
+  // this should be the most common case, sensor ok and not fallen down
+  alpha_th = min(alpha_th/1.2, alpha_th_min);
+  dalpha_th = min(dalpha_th/1.2, dalpha_th_min);
+  dphi_th = min(dphi_th/1.2, dphi_th_min);
+  return true;
 }
