@@ -1,34 +1,41 @@
-void dxdt_segway(float* xdot, binaryFloat* x, float* u);
+void dxdt_segway(float* xdot, float* x, float* u);
 
-void statepredict(float* x2, binaryFloat* x, float* u)
+void statepredict(float* x2, binaryFloat* x, binaryFloat* u)
 {
   //use RungeKutta4 and a segway model to estimate next state
-  const float dt2 = DT/2000000.0;
-  float temp[7];
-  float dy1[7];
-  float dy2[7];
-  float dy3[7];
-  float dy4[7];
+  const float dt = DT/1000000.0;
+  float xfloat[7];
+  float ufloat[7];
+  float dx1[7];
+  float dx2[7];
+  float dx3[7];
+  float dx4[7];
   int i;
 
-  dxdt_segway(dy1, x, ut);
+  // Get rid of floatingPoint
   for (i = 0; i<7; i++)
-      temp[i] = dy1[i]*dt2 + x[i];
+      xfloat[i] = x[i].floatingPoint;
+  for (i = 0; i<2; i++)
+      ufloat[i] = u[i].floatingPoint;
 
-  dxdt_segway(dy2, temp, ut);
+  dxdt_segway(dx1, xfloat, ufloat);
   for (i = 0; i<7; i++)
-      temp[i] = dy2[i]*dt2 + x[i];
+      xfloat[i] = dx1[i]*dt/2 + x[i].floatingPoint;
 
-  dxdt_segway(dy3, temp, ut);
+  dxdt_segway(dx2, xfloat, ufloat);
   for (i = 0; i<7; i++)
-      temp[i] = dy3[i]*dt2*2 + x[i];
+      xfloat[i] = dx2[i]*dt/2 + x[i].floatingPoint;
 
-  dxdt_segway(dy4, temp, ut);
+  dxdt_segway(dx3, xfloat, ufloat);
   for (i = 0; i<7; i++)
-      x2[i] = dt2*2*(dy1[i] + 2*(dy2[i]+dy3[i]) + dy4[i])/6.0;
+      xfloat[i] = dx3[i]*dt + x[i].floatingPoint;
+
+  dxdt_segway(dx4, xfloat, ufloat);
+  for (i = 0; i<7; i++)
+      x2[i] = dt*(dx1[i] + 2*(dx2[i]+dx3[i]) + dx4[i])/6.0 + x[i].floatingPoint;
 }
 
-void dxdt_body(float* xdot, binaryFloat* x, float* u)
+void dxdt_body(float* xdot, float* x, float* u)
 {
     const float Mb = 1.76;
   	const float Mw = 0.147;
@@ -42,11 +49,11 @@ void dxdt_body(float* xdot, binaryFloat* x, float* u)
     const float Iwd = Mw*pow(b, 2);
     const float g = 9.81;
 
-    const float phi = x[2].floatingPoint;
-    const float alpha = x[3].floatingPoint;
-    const float dalpha = x[4].floatingPoint;
-    const float v = x[5].floatingPoint;
-    const float dphi = x[6].floatingPoint;
+    const float phi = x[2];
+    const float alpha = x[3];
+    const float dalpha = x[4];
+    const float v = x[5];
+    const float dphi = x[6];
 
     float Dalpha, Galpha, H, Kalpha, f21, f22, f23, g21, g22, g23;
 
@@ -79,8 +86,8 @@ void dxdt_body(float* xdot, binaryFloat* x, float* u)
 
     xdot[0] = cos(phi)*v;
     xdot[1] = sin(phi)*v;
-    xdot[2] = x[6].floatingPoint;
-    xdot[3] = x[4].floatingPoint;
+    xdot[2] = x[6];
+    xdot[3] = x[4];
     xdot[4] = f21 + g21;
     xdot[5] = f22 + g22;
     xdot[6] = f23 + g23;
@@ -103,7 +110,7 @@ float drive(float u, float omega)
     return out;
 }
 
-void dxdt_segway(float* xdot, binaryFloat* x, float* u)
+void dxdt_segway(float* xdot, float* x, float* u)
 {
     const float R = 0.07;
     const float b = 0.1985/2;
