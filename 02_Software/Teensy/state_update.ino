@@ -77,9 +77,9 @@ void state_sensor_update()
 // increasing the threshold to circumvent accumulating errors
 bool check_sensor_values()
 {
-  const float alpha_th_min = 0.1;
-  const float dalpha_th_min = 0.1;
-  const float dphi_th_min = 0.1;
+  const float alpha_th_min = 1.0;
+  const float dalpha_th_min = 4.0; //actually the model is bad at predicting this in some cases
+  const float dphi_th_min = 3.0;
 
   // Ignore model and use sensor if the segway has fallen down
   if (abs(state[3].floatingPoint) > 50.0*M_PI/180.0)
@@ -95,8 +95,8 @@ bool check_sensor_values()
   }
 
   // this should be the most common case, sensor ok and not fallen down
-  alpha_th = min(alpha_th/1.2, alpha_th_min);
-  dalpha_th = min(dalpha_th/1.2, dalpha_th_min);
-  dphi_th = min(dphi_th/1.2, dphi_th_min);
+  alpha_th = max(alpha_th/1.2, alpha_th_min);
+  dalpha_th = max(dalpha_th/1.2, dalpha_th_min);
+  dphi_th = max(dphi_th/1.2, dphi_th_min);
   return true;
 }

@@ -91,6 +91,9 @@ void raspi_communication()
     state[0].floatingPoint = 0.0;
     state[1].floatingPoint = 0.0;
     state[2].floatingPoint = 0.0;
+    state_sensor[0] = 0.0;
+    state_sensor[1] = 0.0;
+    state_sensor[2] = 0.0;
     mpu_bias[0] = -ypr[0]; // force gear angle to be 0
     newdata = false;
     sinceSendtoRasp = 0;

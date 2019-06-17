@@ -135,8 +135,8 @@ void loop()
 
   // Run a prediction step here, as this should be where the mc has some time
   //Overwrite "state_model" and "newprediction"
-  runmodel()
+  runmodel();
 
   //Uncomment to send data to PC
-  pc_communication();
+  //pc_communication();
 }
