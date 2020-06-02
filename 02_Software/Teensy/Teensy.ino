@@ -129,5 +129,5 @@ void loop()
   raspi_communication();
 
   //Uncomment to send data to PC
-  pc_communication();
+  //pc_communication();
 }
